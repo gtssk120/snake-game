@@ -1,7 +1,7 @@
-"""
-Snake class for a terminal snake game.
+"""Snake class for a terminal snake game.
 Pure game logic — no curses or UI imports.
 """
+import curses
 from collections import deque
 
 
@@ -240,6 +240,119 @@ class Game:
         self._game_over = False
         self._paused = False
         self.spawn_food()
+
+
+# =============================================================================
+# CURSES UI
+# =============================================================================
+
+
+def draw_board(stdscr, game):
+    """Render the game board using curses.
+
+    Draws walls as '#', snake body as green 'o', head as green 'O',
+    food as red '@', and a score bar at the top.
+    """
+    stdscr.clear()
+
+    height, width = game.height, game.width
+
+    # Score bar
+    stdscr.addstr(0, 0, f"Score: {game.score}")
+
+    # Draw walls
+    for y in range(height):
+        stdscr.addstr(y + 1, 0, "#")
+        stdscr.addstr(y + 1, width + 1, "#")
+    for x in range(width + 2):
+        stdscr.addstr(0, x, "#")
+        stdscr.addstr(height + 1, x, "#")
+
+    # Draw food
+    if game.food:
+        fy, fx = game.food
+        stdscr.addstr(fy + 1, fx + 1, "@", curses.color_pair(1))
+
+    # Draw snake
+    for i, (sy, sx) in enumerate(game.snake.body):
+        if i == 0:
+            # Head
+            stdscr.addstr(sy + 1, sx + 1, "O", curses.color_pair(2))
+        else:
+            # Body
+            stdscr.addstr(sy + 1, sx + 1, "o", curses.color_pair(2))
+
+    # Pause overlay
+    if game.is_paused and not game.game_over:
+        pause_msg = "PAUSED"
+        px = (width + 2 - len(pause_msg)) // 2
+        py = (height + 2) // 2
+        stdscr.addstr(py, px, pause_msg, curses.color_pair(3))
+
+    # Game over overlay
+    if game.game_over:
+        over_msg = f"GAME OVER - Score: {game.score}"
+        ox = (width + 2 - len(over_msg)) // 2
+        oy = (height + 2) // 2
+        stdscr.addstr(oy, ox, over_msg, curses.color_pair(1))
+        exit_msg = "Press any key to exit"
+        ex = (width + 2 - len(exit_msg)) // 2
+        stdscr.addstr(oy + 1, ex, exit_msg)
+
+    stdscr.refresh()
+
+
+def main(stdscr):
+    """Curses entry point for the snake game.
+
+    Handles keyboard input and the main game loop.
+    """
+    # Curses setup
+    curses.cbreak()
+    curses.noecho()
+    curses.curs_set(0)
+    stdscr.keypad(True)
+    stdscr.timeout(100)
+
+    # Initialize colors if supported
+    if curses.has_colors():
+        curses.start_color()
+        curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+
+    game = Game(20, 20)
+
+    while True:
+        key = stdscr.getch()
+
+        if key == ord('q') or key == ord('Q'):
+            break
+
+        if key == ord('p') or key == ord('P'):
+            if game.is_paused:
+                game.resume()
+            else:
+                game.pause()
+
+        if key == curses.KEY_UP:
+            game.snake.set_direction('UP')
+        elif key == curses.KEY_DOWN:
+            game.snake.set_direction('DOWN')
+        elif key == curses.KEY_LEFT:
+            game.snake.set_direction('LEFT')
+        elif key == curses.KEY_RIGHT:
+            game.snake.set_direction('RIGHT')
+
+        if not game.is_paused and not game.game_over:
+            game.tick()
+
+        draw_board(stdscr, game)
+
+        if game.game_over:
+            draw_board(stdscr, game)
+            stdscr.getch()  # Wait for key press
+            break
 
 
 # =============================================================================
@@ -1173,4 +1286,9 @@ class TestGameReset(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == '--test':
+        sys.argv = [sys.argv[0]] + sys.argv[2:]  # strip --test for unittest
+        unittest.main()
+    else:
+        curses.wrapper(main)
