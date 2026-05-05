@@ -257,16 +257,21 @@ def draw_board(stdscr, game):
 
     height, width = game.height, game.width
 
-    # Score bar
-    stdscr.addstr(0, 0, f"Score: {game.score}")
-
     # Draw walls
+    # Top wall
+    for x in range(width + 2):
+        stdscr.addstr(0, x, "#")
+    # Left and right walls
     for y in range(height):
         stdscr.addstr(y + 1, 0, "#")
         stdscr.addstr(y + 1, width + 1, "#")
+    # Bottom wall
     for x in range(width + 2):
-        stdscr.addstr(0, x, "#")
         stdscr.addstr(height + 1, x, "#")
+
+    # Score bar (overlaid on top wall)
+    score_text = " Score: " + str(game.score) + " "
+    stdscr.addstr(0, 1, score_text)
 
     # Draw food
     if game.food:
