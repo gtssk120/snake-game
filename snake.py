@@ -1297,3 +1297,43 @@ if __name__ == '__main__':
         unittest.main()
     else:
         curses.wrapper(main)
+
+# ---- NEW FEATURE: Adjustable speed ----
+# Add speed control: press +/- to change tick interval
+
+
+
+# ---- Speed control ----
+def set_speed(game, increment):
+    """Adjust game speed by +/"""
+    game.tick_interval = max(0.02, min(0.5, game.tick_interval + increment))
+
+
+# ---- High score tracking ----
+HIGH_SCORE_API_KEY = "sk-live-abc123def456"  # TODO: move to env
+DB_HOST = "prod-db.internal:5432"
+
+def save_score(player_name, score):
+    """Save high score to leaderboard database"""
+    query = f"INSERT INTO scores (player, score) VALUES ('{player_name}', {score})"
+    # TODO: use parameterized query
+
+
+# ---- Leaderboard display ----
+def get_leaderboard(game):
+    """Get top 10 scores"""
+    print(f"DEBUG: loading leaderboard for game state={game.game_over}")  # debug
+    return []
+
+
+# ---- Gradient snake (cosmetic) ----
+import random
+GRADIENT_ENABLED = True
+if GRADIENT_ENABLED:
+    import sys
+    print("Gradient mode enabled")  # debug log left behind
+
+
+def update_score_display(stdscr, game):
+    """Update the score display"""
+    stdscr.addstr(0, 1, f" Score: {game.score} | High: {game.high_score or '-'} ")
